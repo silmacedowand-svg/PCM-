@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCM - Gestão de Manutenção</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("pcm_theme")||"light"}catch(e){}</script>
+<style>
+:root{
+  --blue:#0756a8; --blue2:#0b78d0; --orange:#f58220; --bg:#f3f6fa;
+  --dark:#17324d; --green:#1d9b5b; --red:#d83b3b; --yellow:#e6a700;
+  --white:#fff; --muted:#6c7a89; --border:#dfe6ee;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:#203040}
+button,input,select,textarea{font:inherit}
+.app{display:flex;min-height:100vh}
+.sidebar{width:250px;background:linear-gradient(180deg,#063f7c,#0756a8);color:#fff;padding:18px 14px;position:sticky;top:0;height:100vh}
+.brand{font-weight:800;font-size:21px;padding:8px 10px 20px;border-bottom:1px solid rgba(255,255,255,.18)}
+.brand span{color:#ff9a3d}
+.nav{margin-top:15px}
+.nav button{width:100%;border:0;background:transparent;color:#fff;text-align:left;padding:12px 13px;border-radius:8px;margin:3px 0;cursor:pointer}
+.nav button:hover,.nav button.active{background:rgba(255,255,255,.16)}
+.main{flex:1;padding:22px;min-width:0}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px}
+h1{margin:0;color:var(--dark);font-size:26px}
+.subtitle{color:var(--muted);font-size:13px;margin-top:4px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:0;border-radius:7px;padding:9px 13px;cursor:pointer;font-weight:700}
+.primary{background:var(--blue);color:white}.orange{background:var(--orange);color:white}
+.light{background:white;color:var(--blue);border:1px solid var(--border)}
+.danger{background:#fee;color:var(--red);border:1px solid #f5caca}
+.grid{display:grid;gap:14px}.kpis{grid-template-columns:repeat(5,minmax(130px,1fr))}
+.card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;box-shadow:0 2px 8px rgba(20,50,80,.05)}
+.kpi-title{font-size:12px;color:var(--muted);font-weight:700}.kpi-value{font-size:27px;font-weight:800;color:var(--dark);margin-top:5px}.kpi-note{font-size:11px;color:var(--muted);margin-top:3px}
+.section{margin-top:16px}.section-title{font-size:17px;font-weight:800;color:var(--dark);margin-bottom:10px}
+.dashboard-grid{grid-template-columns:1.2fr .8fr}
+table{width:100%;border-collapse:collapse;background:white}.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:9px}
+th,td{padding:10px 11px;border-bottom:1px solid #edf1f5;text-align:left;font-size:13px;white-space:nowrap}
+th{background:#f7f9fc;color:#4e6070;font-size:12px}
+.badge{display:inline-block;padding:4px 7px;border-radius:20px;font-size:11px;font-weight:800}
+.b-green{background:#e8f7ef;color:#167346}.b-yellow{background:#fff4d8;color:#916700}.b-red{background:#fee9e9;color:#b52e2e}.b-blue{background:#e7f1fc;color:#0756a8}.b-gray{background:#edf1f5;color:#63717e}
+.progress{height:8px;background:#edf1f5;border-radius:8px;overflow:hidden}.progress>i{display:block;height:100%;background:var(--blue)}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.form-grid .full{grid-column:1/-1}
+label{font-size:12px;font-weight:700;color:#52606d;display:block;margin-bottom:4px}
+input,select,textarea{width:100%;border:1px solid #ccd6e0;border-radius:7px;padding:9px;background:#fff}
+textarea{min-height:80px;resize:vertical}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:10}
+.modal.show{display:flex}.modal-box{background:#fff;border-radius:11px;max-width:650px;width:100%;max-height:90vh;overflow:auto;padding:20px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
+.close{border:0;background:#eee;border-radius:50%;width:30px;height:30px;cursor:pointer}
+.chart{display:flex;align-items:flex-end;height:180px;gap:13px;padding:15px 5px 0}.bar{flex:1;text-align:center}.bar i{display:block;background:var(--blue);border-radius:5px 5px 0 0;min-height:5px}.bar small{font-size:10px;color:var(--muted)}
+.empty{text-align:center;color:var(--muted);padding:25px}
+.alert{padding:11px;border-radius:8px;background:#fff7df;border:1px solid #f2df9d;color:#7a5b00;font-size:13px}
+.search{max-width:280px}
+.footer-note{font-size:11px;color:var(--muted);margin-top:15px}
+@media(max-width:1000px){.sidebar{width:205px}.kpis{grid-template-columns:repeat(3,1fr)}.dashboard-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.app{display:block}.sidebar{width:100%;height:auto;position:relative}.nav{display:flex;overflow:auto}.nav button{white-space:nowrap;width:auto}.main{padding:13px}.kpis{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}}
+
+.acard{cursor:pointer;border-left:4px solid var(--blue);padding:13px 15px}.acard:hover{box-shadow:0 3px 12px rgba(20,50,80,.14)}
+.alerts{grid-template-columns:repeat(5,1fr)}
+.lnk{color:var(--blue2);cursor:pointer;text-decoration:underline}
+tr.late td:first-child,tr.low td:first-child{box-shadow:inset 3px 0 0 var(--red)}tr.late td,tr.low td{background:rgba(216,59,59,.06)}
+.modal-box.wide{max-width:920px}
+.kv{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.kv>div{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 11px}.kv small{display:block;color:var(--muted);font-size:11px;font-weight:700}.kv b{color:var(--dark)}
+td.wrap{white-space:normal;min-width:160px}
+[data-theme=dark]{--bg:#0f1720;--dark:#e6edf5;--muted:#93a4b6;--border:#26364a;--blue:#2f7fd1;--blue2:#5aa5ec;color-scheme:dark}
+[data-theme=dark] body{background:var(--bg);color:#d5dee8}
+[data-theme=dark] .card,[data-theme=dark] table,[data-theme=dark] .modal-box,[data-theme=dark] input,[data-theme=dark] select,[data-theme=dark] textarea,[data-theme=dark] .light,[data-theme=dark] .kv>div{background:#16212e;color:#d5dee8;border-color:var(--border)}
+[data-theme=dark] .light{color:#8ec2f5}
+[data-theme=dark] th{background:#1c2a3a;color:#a9b8c8}[data-theme=dark] td{border-color:#26364a}
+[data-theme=dark] label{color:#a9b8c8}
+[data-theme=dark] .sidebar{background:linear-gradient(180deg,#0a1522,#0d2038)}
+[data-theme=dark] .progress,[data-theme=dark] .close{background:#26364a;color:#d5dee8}
+[data-theme=dark] .danger{background:#3a1c1f;border-color:#5c2a2e;color:#ff8f8f}
+[data-theme=dark] .alert{background:#3a3010;border-color:#5c4b12;color:#f2d675}
+[data-theme=dark] .b-green{background:#12341f;color:#5fd694}[data-theme=dark] .b-yellow{background:#3a3010;color:#f2d675}[data-theme=dark] .b-red{background:#3a1c1f;color:#ff8f8f}[data-theme=dark] .b-blue{background:#12294a;color:#8ec2f5}[data-theme=dark] .b-gray{background:#26364a;color:#a9b8c8}
+@media(max-width:1000px){.alerts{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.alerts{grid-template-columns:repeat(2,1fr)}.kv{grid-template-columns:1fr 1fr}}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script></head>
+
+
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand">PCM <span>MANUTENÇÃO</span></div>
+  <div class="nav">
+    <button class="" data-page="dashboard">📊 Painel Inicial</button>
+    <button data-page="ativos" class="active">🏭 Ativos / Inventário</button>
+    <button data-page="planos">🛠 Planos Preventivos</button>
+    <button data-page="lubrificacao">🛢 Plano de Lubrificação</button>
+    <button data-page="os">📋 Ordens de Serviço</button>
+    <button data-page="estoque">📦 Estoque e Materiais</button>
+    <button data-page="equipe">👷 Mão de Obra</button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="top">
+    <div><h1 id="pageTitle">Gestão de Ativos (Inventário)</h1><div class="subtitle">Sistema de PCM — Preventiva, preditiva, OS, estoque e indicadores</div></div>
+    <div class="actions">
+      <button class="btn light" id="themeBtn" onclick="toggleTheme()">☀ Tema claro</button>
+      <button class="btn light" onclick="salvarCopia()" title="Gera um arquivo .html com todos os dados dentro, pronto para enviar">💾 Salvar cópia para enviar</button>
+      <button class="btn light" onclick="exportData()">⬇ Exportar dados (PDF)</button>
+    </div>
+  </div>
+  <div id="content"></div>
+</main>
+</div>
+
+<div class="modal" id="modal"><div class="modal-box"><div class="modal-head"><h2 id="modalTitle">Novo registro</h2><button class="close" onclick="closeModal()">×</button></div><div id="modalBody"></div></div></div>
+
+<!-- DADOS EMBUTIDOS: o app abre já com estes dados quando o navegador ainda não tem nada salvo. "null" = sem dados embutidos. -->
+<script id="pcm-seed" type="application/json">{"id":"mufv3p0bow1qy","savedAt":"2026-09-24T18:25:13.307Z","dados":{"ativos":[{"id":"muehrqcx7e41c","tag":"TOR-01","nome":"TORNO MECANICO","local":"TORNEARIA","fabricante":"NARDINE","criticidade":"Alta","status":"Operando"},{"id":"muehsz61drivk","tag":"TOR-02","nome":"TORNO MECANICO","local":"TORNEARIA","fabricante":"NARDINE","criticidade":"Alta","status":"Operando"},{"id":"muehtzuxgifn9","tag":"TOR-03","nome":"TORNO MECANICA","local":"TORNEARIA","fabricante":"NARDINE","criticidade":"Alta","status":"Operando"},{"id":"muehusm10x62r","tag":"TOR-04","nome":"TORNO MECANICO","local":"TORNEARIA","fabricante":"NARDINE","criticidade":"Alta","status":"Operando"},{"id":"muehw4ypuh08f","tag":"TOR-05","nome":"TORNO MECANICO","local":"TORNEARIA","fabricante":"NARDINE","criticidade":"Alta","status":"Operando"},{"id":"muehwzshay4ef","tag":"TOR-06","nome":"TORNO MECANICA","local":"TORNEARIA","fabricante":"NARDINE","criticidade":"Alta","status":"Operando"},{"id":"muehznltzi5wt","tag":"FRE 01-01-03-01","nome":"FRESADORA","local":"FRESAMENTO","fabricante":"DIPLOMAT","criticidade":"Alta","status":"Operando"},{"id":"muei1goh4nm20","tag":"FFH/40","nome":"FRESADORA FERRAMENTEIRA","local":"FRESAMENTO","fabricante":"HOVAM","criticidade":"Alta","status":"Operando"},{"id":"muei5hehajj2g","tag":"RER.01.01.03.01","nome":"RETIFÍCA","local":"RETIFÍCA","fabricante":"VEKER","criticidade":"Alta","status":"Em manutenção"},{"id":"muei896923ol0","tag":"DOB.01-03-01","nome":"DOBRADEIRA HIDRÁULICA","local":"CONFORMAÇÃO","fabricante":"NEWTON","criticidade":"Baixa","status":"Parado"},{"id":"muei9kor8xs1x","tag":"SE FIT 01-01-03-02","nome":"SERRA FITA","local":"CORTE","fabricante":"RONEMAK","criticidade":"Alta","status":"Operando"}],"planos":[{"id":"mufsknwz8w0vi","equip":"RER.01.01.03.01","tipo":"Corretiva","servico":"limpeza e lubrificação","periodo":"1 mes","proxima":"2026-10-24","condicao":"","ativo":true,"ultima":"2026-09-24"},{"id":"muft24qbjzsez","equip":"FRE 01-01-03-01","tipo":"Preventiva","servico":"LIMPEZA","periodo":"1 MES","proxima":"2026-10-24","condicao":"","ativo":true,"ultima":"2026-09-24"},{"id":"muftfz8jhhip7","equip":"TOR-06","tipo":"Preventiva","servico":"LUBRIFICAÇÃO","periodo":"1 MES","proxima":"2026-10-24","condicao":"","ativo":true,"ultima":"2026-09-24"}],"os":[{"id":"muedovcz3n8se","numero":"OS-0001","ativo":"TOR-001","tipo":"Preventiva","prioridade":"Alta","tecnico":"Carlos","data":"2026-09-25","horasEstimadas":2,"status":"Aberta","horasReparo":0,"horasOperacao":0},{"id":"muedovczuzzhr","numero":"OS-0002","ativo":"FRS-001","tipo":"Corretiva","prioridade":"Média","tecnico":"João","data":"2026-09-23","horasEstimadas":4,"status":"Em execução","horasReparo":0,"horasOperacao":0},{"id":"muedovczit7r4","numero":"OS-0003","ativo":"COM-001","tipo":"Corretiva","prioridade":"Alta","tecnico":"Carlos","data":"2026-09-20","horasEstimadas":3,"status":"Concluída","horasReparo":3,"horasOperacao":120}],"estoque":[{"id":"muedovczb3jz2","item":"Óleo ISO VG 68","codigo":"LUB-068","quantidade":8,"minimo":5,"unidade":"L","custo":35},{"id":"muedovczqtc9q","item":"Filtro de óleo","codigo":"FIL-001","quantidade":1,"minimo":2,"unidade":"un","custo":85}],"equipe":[{"id":"muedovcza837d","nome":"Carlos","especialidade":"Mecânica","turno":"07:00–16:00","horasDisponiveis":8,"status":"Disponível"},{"id":"muedovczddmpb","nome":"João","especialidade":"Mecânica","turno":"13:00–22:00","horasDisponiveis":8,"status":"Ocupado"}],"lubrificacao":[{"id":"mufstr6rwl5i2","ativo":"RER.01.01.03.01 / RETIFÍCA","ponto":"guias e fusos de Avanço","lubrificante":"ISO VG 68","metodo":"Troca / completar nível","quantidade":"2.5","unidade":"Litros","periodo":"1 meses","ultima":"2026-09-24","proxima":"2026-10-24","responsavel":"Gabriel Araujo"},{"id":"muft71cr3ctdb","ativo":"FRE 01-01-03-01 / FRESADORA","ponto":"MESA LONGITUDINAL.","lubrificante":"","metodo":"Outro","quantidade":"","unidade":"Litros","periodo":"1 meses","ultima":"2026-09-24","proxima":"2026-10-24","responsavel":"GABRIEL ARAUJO"},{"id":"muftl8w1c5oc0","ativo":"TOR-06","ponto":"CABEÇOTE FIXO.","lubrificante":"SHELL TELLUS 68","metodo":"Troca / completar nível","quantidade":"3.5","unidade":"Litros","periodo":"1 meses","ultima":"2026-09-24","proxima":"2026-10-24","responsavel":"gabriel araujo"}],"lubHist":[{"id":"mufsu82baa53l","pontoId":"mufstr6rwl5i2","data":"2026-09-24","ativo":"RER.01.01.03.01 / RETIFÍCA","ponto":"guias e fusos de Avanço","lubrificante":"ISO VG 68","metodo":"Troca / completar nível","quantidade":"2.5 Litros","responsavel":"Gabriel Araujo"},{"id":"muft77xv7s4j8","pontoId":"muft71cr3ctdb","data":"2026-09-24","ativo":"FRE 01-01-03-01 / FRESADORA","ponto":"MESA LONGITUDINAL.","lubrificante":"","metodo":"Outro","quantidade":"Litros","responsavel":"GABRIEL ARAUJO"},{"id":"muftlzjlrwhxc","pontoId":"muftl8w1c5oc0","data":"2026-09-24","ativo":"TOR-06","ponto":"CABEÇOTE FIXO.","lubrificante":"SHELL TELLUS 68","metodo":"Troca / completar nível","quantidade":"3.5 Litros","responsavel":"gabriel araujo"}],"consumo":[],"versao":2}}</script>
+<script>
+const KEY='pcm_app_v1';
+const EMPTY=()=>({ativos:[],planos:[],os:[],estoque:[],equipe:[],lubrificacao:[],lubHist:[],consumo:[],planoHist:[]});
+function migrate(d){
+ const b=Object.assign(EMPTY(),d||{});
+ Object.keys(EMPTY()).forEach(k=>{if(!Array.isArray(b[k]))b[k]=[]});
+ b.planos.forEach(p=>{if(typeof p.ativo==='string'){p.equip=p.ativo;p.ativo=true}if(p.ativo===undefined)p.ativo=true});
+ b.versao=2;return b;
+}
+function readSeed(){try{const el=document.getElementById('pcm-seed');const t=el&&el.textContent.trim();if(!t||t==='null')return null;const o=JSON.parse(t);return o&&o.dados?o:{id:'legado',savedAt:null,dados:o}}catch(e){return null}}
+let db;
+(function(){
+ const seed=readSeed();let raw=null,applied=null;
+ try{raw=localStorage.getItem(KEY);applied=localStorage.getItem(KEY+'_seed')}catch(e){}
+ let useSeed=false;
+ if(seed){
+  if(!raw)useSeed=true;
+  else if(applied!==seed.id){
+   const quando=seed.savedAt?new Date(seed.savedAt).toLocaleString('pt-BR'):'data desconhecida';
+   useSeed=confirm('Este arquivo traz dados salvos em '+quando+'.\n\nOK = carregar os dados deste arquivo (substitui os dados que já estão neste navegador).\nCancelar = manter os dados atuais do navegador.');
+  }
+  if(applied!==seed.id){try{localStorage.setItem(KEY+'_seed',seed.id)}catch(e){}}
+ }
+ if(useSeed){db=migrate(seed.dados);try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}return}
+ try{db=migrate(raw?JSON.parse(raw):null)}
+ catch(e){try{localStorage.setItem(KEY+'_corrompido',raw)}catch(_){}db=migrate(seed?seed.dados:null)}
+})();
+const $=s=>document.querySelector(s);
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){alert('Não foi possível salvar os dados neste navegador (armazenamento cheio ou bloqueado).')}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function money(n){return 'R$ '+Number(n||0).toFixed(2).replace('.',',')}
+function dateBR(x){if(!x)return '-'; const d=new Date(x+'T00:00:00'); return d.toLocaleDateString('pt-BR')}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+function showPage(page){
+ document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+ const titles={dashboard:'Painel Inicial de Manutenção',ativos:'Gestão de Ativos (Inventário)',planos:'Planos de Manutenção Automáticos',lubrificacao:'Plano de Lubrificação',os:'Ordens de Serviço (OS)',estoque:'Controle de Estoque e Materiais',equipe:'Gestão de Mão de Obra e Capacidade'};
+ $('#pageTitle').textContent=titles[page]; window.currentPage=page;
+ ({dashboard:renderDashboard,ativos:renderAtivos,planos:renderPlanos,lubrificacao:renderLubrificacao,os:renderOS,estoque:renderEstoque,equipe:renderEquipe}[page])();
+}
+function kpi(title,value,note){return `<div class="card"><div class="kpi-title">${title}</div><div class="kpi-value">${value}</div><div class="kpi-note">${note}</div></div>`}
+function renderDashboard(){
+ const totalA=db.ativos.length, operando=db.ativos.filter(a=>a.status==='Operando').length;
+ const concl=db.os.filter(o=>o.status==='Concluída');
+ const mttr=concl.length?concl.reduce((s,o)=>s+Number(o.horasReparo||0),0)/concl.length:0;
+ const mtbf=concl.length?concl.reduce((s,o)=>s+Number(o.horasOperacao||0),0)/concl.length:0;
+ const disp=totalA?Math.round(operando/totalA*100):0;
+ const backlog=db.os.filter(o=>o.status!=='Concluída').reduce((s,o)=>s+Number(o.horasEstimadas||0),0);
+ const oee=db.os.length?Math.round(concl.length/db.os.length*disp):0;
+ const abertas=db.os.filter(o=>o.status!=='Concluída').length, atras=db.os.filter(osLate).length;
+ const prox=db.planos.filter(planoProx).length, low=db.estoque.filter(isLow).length;
+ const lubA=db.lubrificacao.filter(l=>lubStatus(l.proxima).label==='Atrasado').length;
+ const ac=(t,n,c,pg)=>`<div class="card acard" style="border-left-color:var(--${c})" onclick="showPage('${pg}')"><div class="kpi-title">${t}</div><div class="kpi-value" style="color:${n&&c!=='blue'?'var(--'+c+')':'inherit'}">${n}</div></div>`;
+ const up=db.planos.filter(p=>p.ativo!==false).sort((x,y)=>(x.proxima||'9').localeCompare(y.proxima||'9')).slice(0,6);
+ const crit=db.os.filter(o=>o.status!=='Concluída'&&(osLate(o)||o.prioridade==='Alta')).slice(0,6);
+ $('#content').innerHTML=`
+ <div class="grid kpis">
+ ${kpi('MTBF',mtbf.toFixed(1)+' h','Tempo médio entre falhas')}
+ ${kpi('MTTR',mttr.toFixed(1)+' h','Tempo médio para reparo')}
+ ${kpi('Disponibilidade',disp+'%',operando+' de '+totalA+' ativos operando')}
+ ${kpi('Backlog',backlog.toFixed(1)+' h','Horas de trabalho pendentes')}
+ ${kpi('OEE',oee+'%','Indicador global estimado')}
+ </div>
+ <div class="section-title section">Alertas</div>
+ <div class="grid alerts">${ac('OS abertas',abertas,'blue','os')}${ac('OS atrasadas',atras,'red','os')}${ac('Preventivas próximas (7 dias)',prox,'yellow','planos')}${ac('Lubrificações atrasadas',lubA,'red','lubrificacao')}${ac('Abaixo do estoque mínimo',low,'orange','estoque')}</div>
+ <div class="grid dashboard-grid section">
+  <div class="card"><div class="section-title">Próximas manutenções</div>
+   ${up.length?mini(['Ativo','Tipo','Periodicidade','Próxima'],up.map(p=>[esc(p.equip)||'-',esc(p.tipo),esc(p.periodo),dateBR(p.proxima)+' '+dueBadge(p.proxima)])):'<div class="empty">Cadastre planos preventivos para visualizar os próximos serviços.</div>'}
+  </div>
+  <div class="card"><div class="section-title">OS por status</div>${statusBars()}</div>
+ </div>
+ <div class="grid dashboard-grid section">
+  <div class="card"><div class="section-title">OS atrasadas ou de prioridade alta</div>
+   ${crit.length?mini(['Nº OS','Ativo','Prioridade','Prevista'],crit.map(o=>[`<b>${esc(o.numero)}</b>`,esc(o.ativo),prBadge(o.prioridade),dateBR(o.data)+' '+dueBadge(o.data)])):'<div class="empty">Nenhuma OS crítica em aberto.</div>'}
+  </div>
+  <div class="card"><div class="section-title">Alertas de estoque</div>${stockAlerts()}</div>
+ </div>
+ <div class="footer-note">Os indicadores são calculados automaticamente a partir dos registros cadastrados no sistema.</div>`;
+}
+function statusBars(){
+ const statuses=['Aberta','Em execução','Aguardando peça','Concluída'];
+ const total=Math.max(db.os.length,1);
+ return statuses.map(s=>{let n=db.os.filter(o=>o.status===s).length; return `<div style="margin:11px 0"><div style="display:flex;justify-content:space-between;font-size:12px"><b>${s}</b><span>${n}</span></div><div class="progress"><i style="width:${n/total*100}%"></i></div></div>`}).join('');
+}
+function stockAlerts(){
+ const low=db.estoque.filter(i=>Number(i.quantidade)<=Number(i.minimo));
+ if(!low.length)return '<div class="alert" style="background:#eaf8ef;border-color:#c9ead6;color:#176b3e">✓ Nenhum material abaixo do estoque mínimo.</div>';
+ return low.map(i=>`<div class="alert" style="margin:6px 0">⚠ <b>${esc(i.item)}</b>: ${i.quantidade} ${esc(i.unidade)} — mínimo ${i.minimo}</div>`).join('');
+}
+function toolbar(button,text='Novo registro'){return `<div class="actions" style="margin-bottom:12px"><button class="btn primary" onclick="${button}">＋ ${text}</button><input class="search" id="search" placeholder="Pesquisar..." oninput="filterTable()"></div>`}
+function renderAtivos(){
+ $('#content').innerHTML=toolbar("openAsset()","Novo ativo")+`<div class="table-wrap"><table id="dataTable"><thead><tr><th>TAG</th><th>Equipamento</th><th>Localização</th><th>Fabricante</th><th>Nº de série</th><th>Criticidade</th><th>Status</th><th>Ações</th></tr></thead><tbody>${db.ativos.map(a=>`<tr><td><b class="lnk" onclick="openFicha('${a.id}')">${esc(a.tag)}</b></td><td>${esc(a.nome)}</td><td>${esc(a.local)}</td><td>${esc(a.fabricante)}</td><td>${esc(a.serie)||'-'}</td><td>${esc(a.criticidade)}</td><td><span class="badge ${a.status==='Operando'?'b-green':a.status==='Parado'?'b-red':'b-yellow'}">${esc(a.status)}</span></td><td><button class="btn light" onclick="openFicha('${a.id}')">Ficha</button> <button class="btn light" onclick="openAsset('${a.id}')">Editar</button> <button class="btn danger" onclick="del('ativos','${a.id}')">Excluir</button></td></tr>`).join('')||'<tr><td colspan="8" class="empty">Nenhum ativo cadastrado.</td></tr>'}</tbody></table></div>`;
+}
+function renderPlanos(){
+ const hist=[...(db.planoHist||[])].sort((x,y)=>(y.data||'').localeCompare(x.data||'')).slice(0,30);
+ $('#content').innerHTML=toolbar("openPlan()","Novo plano")+`<div class="table-wrap"><table id="dataTable"><thead><tr><th>Ativo</th><th>Tipo</th><th>Serviço</th><th>Periodicidade</th><th>Próxima execução</th><th>Condição/uso</th><th>Status</th><th>Ações</th></tr></thead><tbody>${db.planos.map(p=>`<tr><td>${esc(p.equip)||'-'}</td><td>${esc(p.tipo)}</td><td>${esc(p.servico)}</td><td>${esc(p.periodo)}</td><td>${dateBR(p.proxima)} ${dueBadge(p.proxima)}</td><td>${esc(p.condicao)}</td><td><span class="badge ${p.ativo!==false?'b-green':'b-gray'}">${p.ativo!==false?'Ativo':'Inativo'}</span></td><td>${p.ativo!==false?`<button class="btn light" onclick="finishPlano('${p.id}')">Concluir</button> `:''}<button class="btn danger" onclick="del('planos','${p.id}')">Excluir</button></td></tr>`).join('')||'<tr><td colspan="8" class="empty">Nenhum plano cadastrado.</td></tr>'}</tbody></table></div>
+ <div class="section-title section">Histórico de execuções</div>
+ ${mini(['Data','Ativo','Serviço','Tipo','Periodicidade','Próxima gerada'],hist.map(h=>[dateBR(h.data),esc(h.equip)||'-',esc(h.servico),esc(h.tipo),esc(h.periodo)||'-',h.proximaGerada?dateBR(h.proximaGerada):'—']))}
+ <div class="footer-note">Exibindo as 30 execuções mais recentes. Use uma periodicidade em dias/semanas/meses/anos (ex.: "30 dias", "6 meses") para que a próxima data seja calculada automaticamente.</div>`;
+}
+function parsePeriodo(str){
+ const s=String(str||'').toLowerCase().trim();
+ if(!s)return null;
+ const palavras=[
+  [/di[aá]ri/, {tipo:'dias',valor:1}],
+  [/quinzenal/, {tipo:'dias',valor:15}],
+  [/semanal/, {tipo:'dias',valor:7}],
+  [/bimestral/, {tipo:'meses',valor:2}],
+  [/trimestral/, {tipo:'meses',valor:3}],
+  [/semestral/, {tipo:'meses',valor:6}],
+  [/anual/, {tipo:'meses',valor:12}],
+  [/mensal/, {tipo:'meses',valor:1}],
+ ];
+ for(const [re,val] of palavras){if(re.test(s))return val}
+ const m=s.match(/(\d+(?:[.,]\d+)?)\s*(dias?|semanas?|m[eê]ses?|m[eê]s|anos?|ano|h|hora|horas)?/);
+ if(m){
+  const n=parseFloat(m[1].replace(',','.'));
+  if(n>0){
+   const u=m[2]||'';
+   if(/^dia/.test(u))return{tipo:'dias',valor:n};
+   if(/^semana/.test(u))return{tipo:'dias',valor:n*7};
+   if(/^ano/.test(u))return{tipo:'meses',valor:n*12};
+   if(/^h/.test(u))return null; // baseado em horas/uso: não dá para calcular uma data
+   return{tipo:'meses',valor:n}; // sem unidade ou "mês/meses": mantém compatibilidade
+  }
+ }
+ return null;
+}
+function proximaData(hoje,intervalo){
+ const d=new Date(hoje);
+ if(intervalo.tipo==='dias')d.setDate(d.getDate()+Math.round(intervalo.valor));
+ else d.setMonth(d.getMonth()+Math.round(intervalo.valor));
+ return ymd(d);
+}
+function finishPlano(id){
+ const p=db.planos.find(x=>x.id===id); if(!p)return;
+ if(!confirm('Registrar a execução do plano "'+p.servico+'" hoje?'))return;
+ const hoje=new Date(), hojeStr=ymd(hoje);
+ p.ultima=hojeStr;
+ const intervalo=parsePeriodo(p.periodo);
+ const calculada=!!intervalo;
+ if(calculada)p.proxima=proximaData(hoje,intervalo);
+ db.planoHist.push({id:uid(),data:hojeStr,equip:p.equip,tipo:p.tipo,servico:p.servico,periodo:p.periodo,proximaGerada:calculada?p.proxima:''});
+ save();showPage('planos');
+ if(!calculada)alert('Execução registrada e salva no histórico. Não foi possível calcular a próxima data automaticamente porque a periodicidade "'+(p.periodo||'(vazia)')+'" não indica um intervalo de tempo (dias/semanas/meses/anos). Ajuste a "Próxima execução" manualmente, se necessário.');
+}
+function lubStatus(dateStr){
+ if(!dateStr)return{label:'Sem data',cls:'b-gray'};
+ const hoje=new Date(); hoje.setHours(0,0,0,0);
+ const d=new Date(dateStr+'T00:00:00');
+ const diffDias=Math.round((d-hoje)/86400000);
+ if(diffDias<0)return{label:'Atrasado',cls:'b-red'};
+ if(diffDias<=7)return{label:'Próximo',cls:'b-yellow'};
+ return{label:'Em dia',cls:'b-green'};
+}
+function renderLubrificacao(){
+ const st=db.lubrificacao.map(l=>lubStatus(l.proxima).label);
+ const atr=st.filter(x=>x==='Atrasado').length, prx=st.filter(x=>x==='Próximo').length;
+ const hist=[...db.lubHist].sort((x,y)=>(y.data||'').localeCompare(x.data||'')).slice(0,30);
+ $('#content').innerHTML=
+ (atr?`<div class="alert" style="margin-bottom:8px">⚠ <b>${atr}</b> ponto(s) de lubrificação atrasado(s).</div>`:'')+
+ (prx?`<div class="alert" style="margin-bottom:12px">⏰ <b>${prx}</b> ponto(s) com vencimento nos próximos 7 dias.</div>`:'')+
+ toolbar("openLub()","Novo ponto de lubrificação")+
+ `<div class="table-wrap"><table id="dataTable"><thead><tr><th>Ativo</th><th>Ponto/Componente</th><th>Lubrificante</th><th>Método</th><th>Quantidade</th><th>Periodicidade</th><th>Última execução</th><th>Próxima execução</th><th>Responsável</th><th>Situação</th><th>Ações</th></tr></thead><tbody>${db.lubrificacao.map(l=>{const s=lubStatus(l.proxima);return `<tr><td><b>${esc(l.ativo)}</b></td><td>${esc(l.ponto)}</td><td>${esc(l.lubrificante)}</td><td>${esc(l.metodo)||'-'}</td><td>${esc(l.quantidade)} ${esc(l.unidade)}</td><td>${esc(l.periodo)}</td><td>${dateBR(l.ultima)}</td><td>${dateBR(l.proxima)}</td><td>${esc(l.responsavel)}</td><td><span class="badge ${s.cls}">${s.label}</span></td><td><button class="btn light" onclick="finishLub('${l.id}')">Executado</button> <button class="btn danger" onclick="del('lubrificacao','${l.id}')">Excluir</button></td></tr>`}).join('')||'<tr><td colspan="11" class="empty">Nenhum ponto de lubrificação cadastrado.</td></tr>'}</tbody></table></div>
+ <div class="section-title section">Histórico de execuções</div>
+ ${mini(['Data','Ativo','Ponto','Lubrificante','Método','Quantidade','Responsável'],hist.map(h=>[dateBR(h.data),esc(h.ativo),esc(h.ponto),esc(h.lubrificante),esc(h.metodo)||'-',esc(h.quantidade),esc(h.responsavel)]))}
+ <div class="footer-note">Exibindo as 30 execuções mais recentes. O histórico completo é mantido no sistema e no backup.</div>`;
+}
+function finishLub(id){
+ const l=db.lubrificacao.find(x=>x.id===id); if(!l)return;
+ if(!confirm('Registrar a execução de "'+l.ponto+'" hoje?'))return;
+ const hoje=new Date(), d=ymd(hoje);
+ db.lubHist.push({id:uid(),pontoId:l.id,data:d,ativo:l.ativo,ponto:l.ponto,lubrificante:l.lubrificante,metodo:l.metodo||'',quantidade:((l.quantidade||'')+' '+(l.unidade||'')).trim(),responsavel:l.responsavel});
+ l.ultima=d;
+ const intervalo=parsePeriodo(l.periodo);
+ const calculada=!!intervalo;
+ if(calculada)l.proxima=proximaData(hoje,intervalo);
+ save();showPage('lubrificacao');
+ if(!calculada)alert('Execução registrada no histórico. Informe a periodicidade (em meses) deste ponto de lubrificação para que a próxima data seja calculada automaticamente.');
+}
+function openLub(){openModal('Cadastrar ponto de lubrificação',`<div class="form-grid">
+<div><label>Ativo *</label><input id="l_ativo" list="dl_ativos" placeholder="TOR-001 / Torno">${dlAtivos()}</div><div><label>Ponto / Componente *</label><input id="l_ponto" placeholder="Mancal, redutor, guias..."></div>
+<div><label>Lubrificante</label><input id="l_lub" placeholder="Óleo ISO VG 68 / Graxa EP2"></div><div><label>Método de lubrificação</label><select id="l_metodo"><option>Pistola de graxa</option><option>Bomba manual</option><option>Copo lubrificador</option><option>Troca / completar nível</option><option>Sistema automático</option><option>Outro</option></select></div>
+<div><label>Quantidade (Litros)</label><input id="l_qtd" type="number" min="0" step="any" placeholder="0.5"></div><div><label>Periodicidade (meses)</label><input id="l_periodo" type="number" min="0" step="1" placeholder="6"></div><div><label>Responsável</label><input id="l_resp" placeholder="Nome do técnico"></div>
+<div><label>Última execução</label><input id="l_ultima" type="date"></div><div><label>Próxima execução</label><input id="l_proxima" type="date"></div>
+</div>${formFooter('saveLub()')}`)}
+function saveLub(){
+ if(!l_ativo.value.trim()||!l_ponto.value.trim()){alert('Informe o ativo e o ponto de lubrificação.');return}
+ if(l_periodo.value&&Number(l_periodo.value)<0){alert('Periodicidade inválida.');return}
+ db.lubrificacao.push({id:uid(),ativo:l_ativo.value.trim(),ponto:l_ponto.value.trim(),lubrificante:l_lub.value.trim(),metodo:l_metodo.value,quantidade:l_qtd.value,unidade:'Litros',periodo:l_periodo.value?l_periodo.value+' meses':'',ultima:l_ultima.value,proxima:l_proxima.value,responsavel:l_resp.value.trim()});save();closeModal();showPage('lubrificacao')}
+function renderOS(){
+ const pr={Alta:0,Média:1,Baixa:2};
+ const list=[...db.os].sort((a,b)=>(a.status==='Concluída')-(b.status==='Concluída')||(!!osLate(b))-(!!osLate(a))||(pr[a.prioridade]??3)-(pr[b.prioridade]??3));
+ $('#content').innerHTML=toolbar("openOS()","Nova OS")+`<div class="table-wrap"><table id="dataTable"><thead><tr><th>Nº OS</th><th>Ativo</th><th>Tipo</th><th>Prioridade</th><th>Técnico</th><th>Prevista</th><th>Estimado</th><th>Realizado</th><th>Status</th><th>Ações</th></tr></thead><tbody>${list.map(o=>`<tr class="${osLate(o)?'late':''}"><td><b>${esc(o.numero)}</b></td><td>${esc(o.ativo)}</td><td>${esc(o.tipo)}</td><td>${prBadge(o.prioridade)}</td><td>${esc(o.tecnico)}</td><td>${dateBR(o.data)} ${osLate(o)?'<span class="badge b-red">Atrasada</span>':''}</td><td>${o.horasEstimadas||0} h</td><td>${o.horasRealizadas?o.horasRealizadas+' h':'-'}</td><td><span class="badge ${o.status==='Concluída'?'b-green':o.status==='Aguardando peça'?'b-yellow':o.status==='Em execução'?'b-blue':'b-gray'}">${esc(o.status)}</span></td><td><button class="btn light" onclick="openOS('${o.id}')">Detalhes</button> ${o.status!=='Concluída'?`<button class="btn light" onclick="finishOS('${o.id}')">Concluir</button> `:''}<button class="btn danger" onclick="del('os','${o.id}')">Excluir</button></td></tr>`).join('')||'<tr><td colspan="10" class="empty">Nenhuma OS cadastrada.</td></tr>'}</tbody></table></div>`;
+}
+function renderEstoque(){
+ const cons=[...db.consumo].sort((x,y)=>(y.data||'').localeCompare(x.data||'')).slice(0,30), low=db.estoque.filter(isLow).length;
+ $('#content').innerHTML=(low?`<div class="alert" style="margin-bottom:12px">⚠ <b>${low}</b> material(is) no estoque mínimo ou abaixo dele.</div>`:'')+toolbar("openStock()","Novo material")+`<div class="table-wrap"><table id="dataTable"><thead><tr><th>Item</th><th>Código</th><th>Quantidade</th><th>Mínimo</th><th>Unidade</th><th>Custo unitário</th><th>Situação</th><th>Ações</th></tr></thead><tbody>${db.estoque.map(i=>{const lw=isLow(i);return `<tr class="${lw?'low':''}"><td><b>${esc(i.item)}</b></td><td>${esc(i.codigo)}</td><td>${i.quantidade}</td><td>${i.minimo}</td><td>${esc(i.unidade)}</td><td>${money(i.custo)}</td><td><span class="badge ${lw?'b-red':'b-green'}">${lw?'Comprar':'Normal'}</span></td><td><button class="btn danger" onclick="del('estoque','${i.id}')">Excluir</button></td></tr>`}).join('')||'<tr><td colspan="8" class="empty">Nenhum material cadastrado.</td></tr>'}</tbody></table></div>
+ <div class="section-title section">Consumo em Ordens de Serviço</div>
+ ${mini(['Data','Item','Quantidade','OS'],cons.map(c=>[dateBR(c.data),esc(c.item),c.qtd+' '+esc(c.unidade),esc(c.os)]))}
+ <div class="footer-note">O consumo é registrado ao informar o material utilizado dentro da OS (botão Detalhes).</div>`;
+}
+function renderEquipe(){
+ const total=db.equipe.reduce((s,e)=>s+Number(e.horasDisponiveis||0),0);
+ const aloc=db.os.filter(o=>o.status!=='Concluída').reduce((s,o)=>s+Number(o.horasEstimadas||0),0);
+ $('#content').innerHTML=`<div class="grid kpis" style="grid-template-columns:repeat(2,minmax(150px,1fr))">${kpi('Horas disponíveis',total+' h','Capacidade cadastrada da equipe')}${kpi('Horas alocadas',aloc.toFixed(1)+' h','Backlog de OS abertas')}</div><div class="section">${toolbar("openTech()","Novo técnico")}<div class="table-wrap"><table id="dataTable"><thead><tr><th>Nome</th><th>Especialidade</th><th>Turno</th><th>Horas disponíveis</th><th>Status</th><th>Ações</th></tr></thead><tbody>${db.equipe.map(e=>`<tr><td><b>${esc(e.nome)}</b></td><td>${esc(e.especialidade)}</td><td>${esc(e.turno)}</td><td>${e.horasDisponiveis} h</td><td><span class="badge ${e.status==='Disponível'?'b-green':'b-yellow'}">${esc(e.status)}</span></td><td><button class="btn danger" onclick="del('equipe','${e.id}')">Excluir</button></td></tr>`).join('')||'<tr><td colspan="6" class="empty">Nenhum técnico cadastrado.</td></tr>'}</tbody></table></div></div>`;
+}
+function filterTable(){let q=($('#search')?.value||'').toLowerCase(); document.querySelectorAll('#dataTable tbody tr').forEach(r=>r.style.display=r.innerText.toLowerCase().includes(q)?'':'none')}
+function del(type,id){if(confirm('Excluir este registro?')){db[type]=db[type].filter(x=>x.id!==id);save();showPage(window.currentPage)}}
+function finishOS(id){
+ const o=db.os.find(x=>x.id===id); if(!o)return;
+ if(!confirm('Concluir a OS "'+o.numero+'" hoje?\n\nVocê ainda pode registrar causa, solução e material usado depois, em "Detalhes".'))return;
+ o.status='Concluída';
+ if(!o.horasRealizadas)o.horasRealizadas=o.horasEstimadas||0;
+ o.horasReparo=o.horasRealizadas||o.horasReparo||o.horasEstimadas||0;
+ if(!o.horasOperacao)o.horasOperacao=(o.horasEstimadas||0)*10;
+ if(!o.dataConclusao)o.dataConclusao=todayStr();
+ save();showPage('os');
+}
+function openModal(title,body,wide){$('#modalTitle').textContent=title;$('#modalBody').innerHTML=body;$('.modal-box').classList.toggle('wide',!!wide);$('#modal').classList.add('show')}
+function closeModal(){$('#modal').classList.remove('show')}
+function formFooter(saveFn){return `<div class="actions" style="margin-top:15px;justify-content:flex-end"><button class="btn light" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="${saveFn}">Salvar</button></div>`}
+function openAsset(id){
+ const a=id?db.ativos.find(x=>x.id===id):null;
+ const v=k=>a?esc(a[k]||''):'';
+ const sel=(k,opts)=>opts.map(o=>`<option${a&&a[k]===o?' selected':''}>${o}</option>`).join('');
+ openModal(a?'Editar ativo — '+a.tag:'Cadastrar ativo',`<div class="form-grid">
+<div><label>TAG</label><input id="f_tag" placeholder="TOR-001" value="${v('tag')}"${a?' readonly title="A TAG não pode ser alterada porque vincula OS, planos e lubrificações"':''}></div><div><label>Equipamento</label><input id="f_nome" placeholder="Torno mecânico" value="${v('nome')}"></div>
+<div><label>Localização</label><input id="f_local" placeholder="Oficina" value="${v('local')}"></div><div><label>Fabricante</label><input id="f_fab" placeholder="Nardini" value="${v('fabricante')}"></div>
+<div><label>Nº de série</label><input id="f_serie" placeholder="Ex.: 123456" value="${v('serie')}"></div><div><label>Criticidade</label><select id="f_crit">${sel('criticidade',['Alta','Média','Baixa'])}</select></div>
+<div><label>Status</label><select id="f_status">${sel('status',['Operando','Parado','Em manutenção'])}</select></div>
+</div>${formFooter("saveAsset("+(a?"'"+a.id+"'":"")+")")}`)}
+function saveAsset(id){
+ const tag=f_tag.value.trim(),nome=f_nome.value.trim();
+ if(!tag||!nome){alert('Informe a TAG e o nome do equipamento.');return}
+ if(db.ativos.some(a=>a.id!==id&&a.tag.toLowerCase()===tag.toLowerCase())){alert('Já existe um ativo com esta TAG.');return}
+ const dados={tag,nome,local:f_local.value.trim(),fabricante:f_fab.value.trim(),serie:f_serie.value.trim(),criticidade:f_crit.value,status:f_status.value};
+ if(id){const a=db.ativos.find(x=>x.id===id);if(!a)return;Object.assign(a,dados)}
+ else db.ativos.push(Object.assign({id:uid()},dados));
+ save();closeModal();showPage('ativos')}
+function openPlan(){openModal('Cadastrar plano de manutenção',`<div class="form-grid">
+<div><label>Ativo</label><input id="p_ativo" placeholder="TOR-001 / Torno"></div><div><label>Tipo</label><select id="p_tipo"><option>Preventiva</option><option>Preditiva</option><option>Inspeção sensitiva</option><option>Corretiva</option></select></div>
+<div class="full"><label>Serviço</label><input id="p_servico" placeholder="Lubrificação, inspeção, limpeza..."></div>
+<div><label>Periodicidade</label><input id="p_periodo" placeholder="6 meses / 10.000 h"></div><div><label>Próxima execução</label><input id="p_proxima" type="date"></div>
+<div class="full"><label>Condição / gatilho</label><input id="p_condicao" placeholder="Por tempo de uso ou condição de uso"></div>
+</div>${formFooter('savePlan()')}`)}
+function savePlan(){
+ if(!p_ativo.value.trim()||!p_servico.value.trim()){alert('Informe o ativo e o serviço do plano.');return}
+ db.planos.push({id:uid(),equip:p_ativo.value.trim(),tipo:p_tipo.value,servico:p_servico.value.trim(),periodo:p_periodo.value.trim(),proxima:p_proxima.value,condicao:p_condicao.value.trim(),ativo:true});save();closeModal();showPage('planos')}
+function openOS(id,conc){
+ const o=db.os.find(x=>x.id===id)||{}, ed=!!o.id;
+ const opt=(vals,cur)=>vals.map(v=>`<option${v===cur?' selected':''}>${esc(v)}</option>`).join('');
+ const tech=['Não atribuído',...db.equipe.map(e=>e.nome)]; if(o.tecnico&&!tech.includes(o.tecnico))tech.push(o.tecnico);
+ const st=conc?'Concluída':(o.status||'Aberta');
+ openModal(ed?'OS '+o.numero:'Criar Ordem de Serviço',`<div class="form-grid">
+<div><label>Nº OS *</label><input id="o_num" value="${esc(o.numero||'OS-'+String(db.os.length+1).padStart(4,'0'))}"></div><div><label>Ativo *</label><input id="o_ativo" list="dl_ativos" value="${esc(o.ativo)}" placeholder="TAG / equipamento">${dlAtivos()}</div>
+<div><label>Tipo</label><select id="o_tipo">${opt(['Preventiva','Corretiva','Preditiva','Inspeção'],o.tipo)}</select></div>
+<div><label>Prioridade</label><select id="o_prio">${opt(['Alta','Média','Baixa'],o.prioridade)}</select></div>
+<div><label>Técnico</label><select id="o_tec">${opt(tech,o.tecnico)}</select></div><div><label>Data prevista</label><input id="o_data" type="date" value="${esc(o.data)}"></div>
+<div><label>Horas estimadas</label><input id="o_horas" type="number" min="0" step="1" value="${o.horasEstimadas??1}"></div><div><label>Horas realizadas</label><input id="o_real" type="number" min="0" step=".5" value="${o.horasRealizadas||''}"></div>
+<div class="full"><label>Status</label><select id="o_status">${opt(['Aberta','Em execução','Aguardando peça','Concluída'],st)}</select></div>
+<div class="full"><label>Descrição / serviço</label><textarea id="o_desc" placeholder="Descreva o serviço a executar.">${esc(o.descricao)}</textarea></div>
+<div><label>Causa da falha</label><textarea id="o_causa" placeholder="Ex.: desgaste do rolamento">${esc(o.causa)}</textarea></div><div><label>Solução aplicada</label><textarea id="o_sol" placeholder="Ex.: troca do rolamento e lubrificação">${esc(o.solucao)}</textarea></div>
+<div><label>Material utilizado (opcional)</label><select id="o_mat"><option value="">— nenhum —</option>${db.estoque.map(i=>`<option value="${i.id}">${esc(i.item)} (saldo ${i.quantidade} ${esc(i.unidade)})</option>`).join('')}</select></div><div><label>Quantidade utilizada</label><input id="o_qtd" type="number" min="0" step="any" value=""></div>
+</div>${formFooter(`saveOS('${o.id||''}')`)}`,true)}
+function saveOS(id){
+ const num=o_num.value.trim(), at=o_ativo.value.trim();
+ if(!num||!at){alert('Informe o número da OS e o ativo.');return}
+ if(db.os.some(x=>x.numero===num&&x.id!==id)){alert('Já existe uma OS com este número.');return}
+ const he=Math.round(Number(o_horas.value||0)), hr=Number(o_real.value||0);
+ if(!(he>=0)||!(hr>=0)){alert('Horas inválidas.');return}
+ const mat=db.estoque.find(x=>x.id===o_mat.value), q=Number(o_qtd.value||0);
+ if(mat&&!(q>0)){alert('Informe a quantidade utilizada do material.');return}
+ if(mat&&q>Number(mat.quantidade)){alert('Quantidade maior que o saldo em estoque ('+mat.quantidade+' '+mat.unidade+').');return}
+ let o=db.os.find(x=>x.id===id); if(!o){o={id:uid(),horasReparo:0,horasOperacao:0};db.os.push(o)}
+ Object.assign(o,{numero:num,ativo:at,tipo:o_tipo.value,prioridade:o_prio.value,tecnico:o_tec.value,data:o_data.value,horasEstimadas:he,horasRealizadas:hr,status:o_status.value,descricao:o_desc.value.trim(),causa:o_causa.value.trim(),solucao:o_sol.value.trim()});
+ if(o.status==='Concluída'){o.horasReparo=hr||o.horasReparo||he; if(!o.horasOperacao)o.horasOperacao=he*10; if(!o.dataConclusao)o.dataConclusao=todayStr()}
+ if(mat){mat.quantidade=Number(mat.quantidade)-q; db.consumo.push({id:uid(),data:todayStr(),item:mat.item,unidade:mat.unidade,qtd:q,os:num})}
+ save();closeModal();showPage('os')}
+function openStock(){openModal('Cadastrar material',`<div class="form-grid">
+<div class="full"><label>Item / peça</label><input id="s_item" placeholder="Óleo ISO VG 68 / filtro / rolamento"></div>
+<div><label>Código</label><input id="s_cod"></div><div><label>Unidade</label><input id="s_uni" value="un"></div>
+<div><label>Quantidade</label><input id="s_qtd" type="number" min="0" value="0"></div><div><label>Estoque mínimo</label><input id="s_min" type="number" min="0" value="1"></div>
+<div><label>Custo unitário</label><input id="s_custo" type="number" min="0" step=".01" value="0"></div>
+</div>${formFooter('saveStock()')}`)}
+function saveStock(){
+ if(!s_item.value.trim()){alert('Informe o item / peça.');return}
+ if(!(Number(s_qtd.value)>=0)||!(Number(s_min.value)>=0)||!(Number(s_custo.value)>=0)){alert('Quantidade, mínimo e custo devem ser números maiores ou iguais a zero.');return}
+ db.estoque.push({id:uid(),item:s_item.value.trim(),codigo:s_cod.value.trim(),unidade:s_uni.value.trim(),quantidade:Number(s_qtd.value),minimo:Number(s_min.value),custo:Number(s_custo.value)});save();closeModal();showPage('estoque')}
+function openTech(){openModal('Cadastrar técnico',`<div class="form-grid">
+<div><label>Nome</label><input id="t_nome"></div><div><label>Especialidade</label><input id="t_esp" placeholder="Mecânica / Elétrica"></div>
+<div><label>Turno</label><input id="t_turno" placeholder="07:00–16:00"></div><div><label>Horas disponíveis</label><input id="t_horas" type="number" min="0" value="8"></div>
+<div><label>Status</label><select id="t_status"><option>Disponível</option><option>Ocupado</option><option>Ausente</option></select></div>
+</div>${formFooter('saveTech()')}`)}
+function saveTech(){
+ if(!t_nome.value.trim()){alert('Informe o nome do técnico.');return}
+ if(!(Number(t_horas.value)>=0)){alert('Horas disponíveis inválidas.');return}
+ db.equipe.push({id:uid(),nome:t_nome.value.trim(),especialidade:t_esp.value.trim(),turno:t_turno.value.trim(),horasDisponiveis:Number(t_horas.value),status:t_status.value});save();closeModal();showPage('equipe')}
+function exportData(){
+ const {jsPDF}=window.jspdf;
+ const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+ const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight();
+ const M=12;
+ const BLUE=[7,86,168], ORANGE=[245,130,32], DARK=[23,50,77], MUTED=[108,122,137], LIGHT=[247,249,252], BORDER=[223,230,238];
+ const GREEN=[22,115,70], RED=[181,46,46], AMBER=[145,103,0], GRAY=[99,113,126];
+ const t=v=>(v===undefined||v===null||v===''||typeof v==='boolean')?'-':String(v);
+ const now=new Date();
+
+ // ===== Cabeçalho da primeira página =====
+ doc.setFillColor(...BLUE); doc.rect(0,0,W,26,'F');
+ doc.setFillColor(...ORANGE); doc.rect(0,26,W,1.6,'F');
+ doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(18);
+ doc.text('PCM MANUTENÇÃO',M,13);
+ doc.setFont('helvetica','normal'); doc.setFontSize(10);
+ doc.text('Relatório de dados de manutenção',M,20);
+ doc.setFontSize(9);
+ doc.text('Gerado em '+now.toLocaleString('pt-BR'),W-M,13,{align:'right'});
+
+ // ===== Cards de resumo =====
+ const osAbertas=db.os.filter(o=>o.status!=='Concluída').length;
+ const lubAtras=db.lubrificacao.filter(l=>lubStatus(l.proxima).label==='Atrasado').length;
+ const estBaixo=db.estoque.filter(i=>Number(i.quantidade)<=Number(i.minimo)).length;
+ const cards=[
+  ['Ativos',db.ativos.length,db.ativos.filter(a=>a.status==='Operando').length+' operando'],
+  ['Planos preventivos',db.planos.length,'cadastrados'],
+  ['Pontos de lubrificação',db.lubrificacao.length,lubAtras+' atrasado(s)'],
+  ['Ordens de serviço',db.os.length,osAbertas+' em aberto'],
+  ['Itens em estoque',db.estoque.length,estBaixo+' abaixo do mínimo'],
+  ['Técnicos',db.equipe.length,db.equipe.filter(e=>e.status==='Disponível').length+' disponível(is)']
+ ];
+ const gap=4, cw=(W-2*M-gap*(cards.length-1))/cards.length, ch=22;
+ let y=35;
+ cards.forEach((c,i)=>{
+  const x=M+i*(cw+gap);
+  doc.setFillColor(...LIGHT); doc.setDrawColor(...BORDER); doc.setLineWidth(0.3);
+  doc.roundedRect(x,y,cw,ch,2,2,'FD');
+  doc.setFillColor(...BLUE); doc.rect(x,y+2,1.2,ch-4,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(...MUTED);
+  doc.text(c[0].toUpperCase(),x+4,y+6);
+  doc.setFontSize(17); doc.setTextColor(...DARK);
+  doc.text(String(c[1]),x+4,y+14.5);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...MUTED);
+  doc.text(c[2],x+4,y+19.5);
+ });
+ y+=ch+12;
+
+ // ===== Seções =====
+ function statusColor(v){
+  if(['Operando','Normal','Em dia','Concluída','Disponível','Ativo'].includes(v))return GREEN;
+  if(['Parado','Atrasado','Comprar','Ausente'].includes(v))return RED;
+  if(['Em manutenção','Próximo','Aguardando peça','Ocupado'].includes(v))return AMBER;
+  if(['Aberta','Em execução'].includes(v))return BLUE;
+  return GRAY;
+ }
+ function section(title,head,rows,statusCol){
+  if(y>H-45){doc.addPage();y=22;}
+  doc.setFillColor(...ORANGE); doc.rect(M,y-4.6,1.6,6.4,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(...DARK);
+  doc.text(title,M+4,y);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...MUTED);
+  doc.text(rows.length+(rows.length===1?' registro':' registros'),W-M,y,{align:'right'});
+  y+=3.5;
+  if(!rows.length){
+   doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(...MUTED);
+   doc.text('Nenhum registro cadastrado.',M+4,y+5);
+   y+=16; return;
+  }
+  doc.autoTable({
+   startY:y, head:[head], body:rows,
+   margin:{left:M,right:M,top:16,bottom:16},
+   theme:'grid',
+   styles:{font:'helvetica',fontSize:8.5,cellPadding:2.2,textColor:DARK,lineColor:BORDER,lineWidth:0.1,overflow:'linebreak',valign:'middle'},
+   headStyles:{fillColor:BLUE,textColor:[255,255,255],fontStyle:'bold',lineColor:BLUE},
+   alternateRowStyles:{fillColor:LIGHT},
+   rowPageBreak:'avoid',
+   didParseCell:d=>{
+    if(d.section==='body'&&d.column.index===statusCol){
+     d.cell.styles.textColor=statusColor(d.cell.raw); d.cell.styles.fontStyle='bold';
+    }
+    if(d.section==='body'&&d.column.index===0){d.cell.styles.fontStyle='bold';}
+   }
+  });
+  y=doc.lastAutoTable.finalY+11;
+ }
+
+ section('Ativos / Inventário',['TAG','Equipamento','Localização','Fabricante','Nº de série','Criticidade','Status'],
+  db.ativos.map(a=>[t(a.tag),t(a.nome),t(a.local),t(a.fabricante),t(a.serie),t(a.criticidade),t(a.status)]),6);
+ section('Planos Preventivos',['Ativo','Tipo','Serviço','Periodicidade','Próxima execução','Condição / uso','Status'],
+  db.planos.map(p=>[t(p.equip),t(p.tipo),t(p.servico),t(p.periodo),dateBR(p.proxima),t(p.condicao),p.ativo?'Ativo':'Inativo']),6);
+ section('Plano de Lubrificação',['Ativo','Ponto / Componente','Lubrificante','Quantidade','Periodicidade','Última','Próxima','Responsável','Situação'],
+  db.lubrificacao.map(l=>[t(l.ativo),t(l.ponto),t(l.lubrificante),(l.quantidade?l.quantidade+' '+(l.unidade||''):'-').trim(),t(l.periodo),dateBR(l.ultima),dateBR(l.proxima),t(l.responsavel),lubStatus(l.proxima).label]),8);
+ section('Ordens de Serviço',['Nº OS','Ativo','Tipo','Prioridade','Técnico','Prevista','Horas est.','Status'],
+  db.os.map(o=>[t(o.numero),t(o.ativo),t(o.tipo),t(o.prioridade),t(o.tecnico),dateBR(o.data),(o.horasEstimadas||0)+' h',t(o.status)]),7);
+ section('Estoque e Materiais',['Item','Código','Quantidade','Mínimo','Unidade','Custo unitário','Situação'],
+  db.estoque.map(i=>[t(i.item),t(i.codigo),t(i.quantidade),t(i.minimo),t(i.unidade),money(i.custo),Number(i.quantidade)<=Number(i.minimo)?'Comprar':'Normal']),6);
+ section('Mão de Obra',['Nome','Especialidade','Turno','Horas disponíveis','Status'],
+  db.equipe.map(e=>[t(e.nome),t(e.especialidade),t(e.turno),(e.horasDisponiveis||0)+' h',t(e.status)]),4);
+
+ // ===== Cabeçalho corrido (pág. 2+) e rodapé em todas =====
+ const n=doc.internal.getNumberOfPages();
+ for(let i=1;i<=n;i++){
+  doc.setPage(i);
+  if(i>1){
+   doc.setFillColor(...BLUE); doc.rect(0,0,W,9,'F');
+   doc.setFillColor(...ORANGE); doc.rect(0,9,W,0.8,'F');
+   doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(255,255,255);
+   doc.text('PCM MANUTENÇÃO',M,6);
+   doc.setFont('helvetica','normal');
+   doc.text('Relatório de dados de manutenção',W-M,6,{align:'right'});
+  }
+  doc.setDrawColor(...BORDER); doc.setLineWidth(0.3); doc.line(M,H-11,W-M,H-11);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...MUTED);
+  doc.text('PCM Manutenção — '+now.toLocaleDateString('pt-BR'),M,H-6);
+  doc.text('Página '+i+' de '+n,W-M,H-6,{align:'right'});
+ }
+ doc.save('relatorio_pcm_'+now.toISOString().slice(0,10)+'.pdf');
+}
+
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function todayStr(){return ymd(new Date())}
+function daysTo(x){if(!x)return null;const h=new Date();h.setHours(0,0,0,0);return Math.round((new Date(x+'T00:00:00')-h)/86400000)}
+const osLate=o=>o.status!=='Concluída'&&!!o.data&&daysTo(o.data)<0;
+const isLow=i=>Number(i.quantidade)<=Number(i.minimo);
+const planoProx=p=>p.ativo!==false&&!!p.proxima&&daysTo(p.proxima)<=7;
+function prBadge(p){return `<span class="badge ${p==='Alta'?'b-red':p==='Média'?'b-yellow':'b-gray'}">${esc(p)}</span>`}
+function dueBadge(x){const d=daysTo(x);if(d===null)return '';return d<0?'<span class="badge b-red">Vencida</span>':d<=7?`<span class="badge b-yellow">${d===0?'Hoje':'em '+d+' d'}</span>`:''}
+function dlAtivos(){return `<datalist id="dl_ativos">${db.ativos.map(a=>`<option value="${esc(a.tag)} / ${esc(a.nome)}">`).join('')}</datalist>`}
+function mini(head,rows){return rows.length?`<div class="table-wrap"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'<div class="empty">Sem registros.</div>'}
+function matchAtivo(a,txt){const x=String(txt||'').toLowerCase();return !!x&&((!!a.tag&&x.includes(a.tag.toLowerCase()))||(a.nome&&a.nome.length>2&&x.includes(a.nome.toLowerCase())))}
+function openFicha(id){
+ const a=db.ativos.find(x=>x.id===id); if(!a)return;
+ const byDate=(x,y)=>(y.data||'').localeCompare(x.data||'');
+ const os=db.os.filter(o=>matchAtivo(a,o.ativo)).sort(byDate);
+ const pl=db.planos.filter(p=>matchAtivo(a,p.equip));
+ const lp=db.lubrificacao.filter(l=>matchAtivo(a,l.ativo));
+ const lh=db.lubHist.filter(h=>matchAtivo(a,h.ativo)).sort(byDate);
+ const cc=os.filter(o=>o.status==='Concluída'), corr=cc.filter(o=>o.tipo==='Corretiva');
+ const avg=(arr,k)=>arr.length?(arr.reduce((s,o)=>s+Number(o[k]||0),0)/arr.length).toFixed(1)+' h':'—';
+ const horas=cc.reduce((s,o)=>s+Number(o.horasRealizadas||o.horasReparo||0),0);
+ const kv=(k,v)=>`<div><small>${k}</small><b>${v}</b></div>`;
+ const h=t=>`<div class="section-title" style="margin-top:16px">${t}</div>`;
+ openModal('Ficha do equipamento — '+a.tag,`<div class="kv">${kv('TAG',esc(a.tag))}${kv('Equipamento',esc(a.nome))}${kv('Localização',esc(a.local)||'—')}${kv('Fabricante',esc(a.fabricante)||'—')}${kv('Nº de série',esc(a.serie)||'—')}${kv('Criticidade',esc(a.criticidade))}${kv('Status',esc(a.status))}</div>
+ ${h('Indicadores básicos')}<div class="kv">${kv('OS registradas',os.length)}${kv('OS concluídas',cc.length)}${kv('Corretivas concluídas',corr.length)}${kv('Horas de manutenção',horas.toFixed(1)+' h')}${kv('MTTR (corretivas)',avg(corr,'horasReparo'))}${kv('MTBF (corretivas)',avg(corr,'horasOperacao'))}</div>
+ ${h('Histórico de OS')}${mini(['Nº OS','Data','Tipo','Prioridade','Status','H. real.','Causa','Solução'],os.map(o=>[`<b>${esc(o.numero)}</b>`,dateBR(o.data),esc(o.tipo),prBadge(o.prioridade),esc(o.status),o.horasRealizadas?o.horasRealizadas+' h':'-',`<span class="wrap">${esc(o.causa)||'-'}</span>`,`<span class="wrap">${esc(o.solucao)||'-'}</span>`]))}
+ ${h('Planos preventivos relacionados')}${mini(['Serviço','Tipo','Periodicidade','Próxima'],pl.map(p=>[esc(p.servico),esc(p.tipo),esc(p.periodo),dateBR(p.proxima)+' '+dueBadge(p.proxima)]))}
+ ${h('Pontos de lubrificação')}${mini(['Ponto','Lubrificante','Método','Próxima','Situação'],lp.map(l=>{const s=lubStatus(l.proxima);return [esc(l.ponto),esc(l.lubrificante),esc(l.metodo)||'-',dateBR(l.proxima),`<span class="badge ${s.cls}">${s.label}</span>`]}))}
+ ${h('Histórico de lubrificação')}${mini(['Data','Ponto','Lubrificante','Método','Responsável'],lh.map(x=>[dateBR(x.data),esc(x.ponto),esc(x.lubrificante),esc(x.metodo)||'-',esc(x.responsavel)]))}
+ <div class="footer-note">As OS, planos e lubrificações são vinculados pela TAG do equipamento no campo "Ativo". Use o formato "TAG / equipamento".</div>`,true);
+}
+function salvarCopia(){
+ try{
+  save();
+  const now=new Date();
+  const seed={id:uid(),savedAt:now.toISOString(),dados:db};
+  try{localStorage.setItem(KEY+'_seed',seed.id)}catch(e){}
+  const clone=document.documentElement.cloneNode(true);
+  const q=x=>clone.querySelector(x);
+  q('#content').innerHTML='';
+  q('#modal').classList.remove('show');q('#modalBody').innerHTML='';q('.modal-box').classList.remove('wide');
+  clone.removeAttribute('data-theme');
+  q('#pcm-seed').textContent=JSON.stringify(seed).replace(/</g,'\\u003c');
+  const html='<!DOCTYPE html>\n'+clone.outerHTML;
+  const p=n=>String(n).padStart(2,'0');
+  const nome='pcm_'+now.getFullYear()+'-'+p(now.getMonth()+1)+'-'+p(now.getDate())+'_'+p(now.getHours())+p(now.getMinutes())+'.html';
+  const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
+  const a=document.createElement('a');a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+ }catch(e){alert('Não foi possível gerar a cópia: '+e.message)}
+}
+function applyTheme(t){document.documentElement.dataset.theme=t;const b=$('#themeBtn');if(b)b.textContent=t==='dark'?'☀ Tema claro':'🌙 Tema escuro'}
+function toggleTheme(){const t=document.documentElement.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('pcm_theme',t)}catch(e){}applyTheme(t)}
+applyTheme(document.documentElement.dataset.theme||'light');
+showPage('dashboard');
+</script>
+
+</body></html>
